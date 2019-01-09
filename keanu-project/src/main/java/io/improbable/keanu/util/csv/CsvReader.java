@@ -1,26 +1,32 @@
 package io.improbable.keanu.util.csv;
 
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import io.improbable.keanu.util.csv.pojo.bycolumn.ColumnsVectorizedObjectParser;
 import io.improbable.keanu.util.csv.pojo.byrow.RowsAsObjectParser;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.util.Collections.emptyList;
 
 public class CsvReader {
 
-    private static final String DEFAULT_DELIMITER = ",";
+    private static final char DEFAULT_DELIMITER = ',';
 
     private final Supplier<Reader> sourceSupplier;
-    private String delimiter;
+    private char delimiter;
     private boolean expectHeader;
     private List<String> header;
 
@@ -44,6 +50,27 @@ public class CsvReader {
         }
     }
 
+    private CSVReader buildCsvReader() {
+        CSVParser parser = new CSVParserBuilder()
+                .withSeparator(delimiter)
+                .build();
+        return new CSVReaderBuilder(sourceSupplier.get())
+                .withCSVParser(parser)
+                .build();
+    }
+
+    private Stream<List<String>> streamCsvReader(CSVReader csvReader) {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(csvReader.iterator(), Spliterator.ORDERED), false)
+                .onClose(() -> {
+                    try {
+                        csvReader.close();
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
+                })
+                .map(Arrays::asList);
+    }
+
     /**
      * Read all lines from the csv file one at a time without ever holding
      * the entire csv file in memory
@@ -52,19 +79,16 @@ public class CsvReader {
      * each string is a field in the line.
      */
     public Stream<List<String>> streamLines() {
-
-        BufferedReader bufferedReader = new BufferedReader(sourceSupplier.get());
-
+        CSVReader csvReader = buildCsvReader();
         if (expectHeader) {
             try {
-                header = splitLine(bufferedReader.readLine());
+                header = Arrays.asList(csvReader.readNext());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
         }
 
-        return bufferedReader.lines()
-            .map(this::splitLine);
+        return streamCsvReader(csvReader);
     }
 
     public <T> RowsAsObjectParser<T> asRowsDefinedBy(Class<T> clazz) {
@@ -85,14 +109,13 @@ public class CsvReader {
      * @return the header
      */
     public List<String> getHeader() {
-
         if (!expectHeader) {
             return emptyList();
         }
 
         if (header == null) {
-            try (BufferedReader bufferedReader = new BufferedReader(sourceSupplier.get())) {
-                this.header = splitLine(bufferedReader.readLine());
+            try (CSVReader csvReader = buildCsvReader()) {
+                this.header = Arrays.asList(csvReader.readNext());
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -119,13 +142,10 @@ public class CsvReader {
      * @return this reader
      */
     public CsvReader withDelimiter(String delimiter) {
-        this.delimiter = delimiter;
+        if (delimiter.length() != 1) {
+           throw new IllegalArgumentException("delimiter must be of length 1");
+        }
+        this.delimiter = delimiter.charAt(0);
         return this;
-    }
-
-    private List<String> splitLine(String line) {
-        return Arrays.stream(line.split(delimiter))
-            .map(String::trim)
-            .collect(Collectors.toList());
     }
 }
