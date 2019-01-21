@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 public class BayesianNetworkGetSubgraphTest {
 
     private static Vertex v;
+    private static Vertex vDisconnected;
     private static BayesianNetwork network;
     private static Vertex grandChild;
     private static Vertex child;
@@ -48,6 +49,8 @@ public class BayesianNetworkGetSubgraphTest {
 
         when(v.getConnectedGraph()).thenReturn(ImmutableSet.of(v, parent, child, grandChild, grandParent));
 
+        vDisconnected = Mockito.mock(Vertex.class);
+
         network = new BayesianNetwork(v.getConnectedGraph());
     }
 
@@ -58,9 +61,28 @@ public class BayesianNetworkGetSubgraphTest {
     }
 
     @Test
+    public void aSubgraphOfDegreeZeroFromTwoVerticesContainsTwoVertices() {
+        Set<Vertex> degree0SubGraph = network.getSubgraph(ImmutableSet.of(v, parent), 0);
+        assertThat(degree0SubGraph, containsInAnyOrder(v, parent));
+    }
+
+    @Test
+    public void aSubgraphOfDegreeZeroFromTwoDisconnectedVerticesContainsTwoVertices() {
+        Set<Vertex> degree0SubGraph = network.getSubgraph(ImmutableSet.of(v, vDisconnected), 0);
+        assertThat(degree0SubGraph, containsInAnyOrder(v, vDisconnected));
+    }
+
+    @Test
     public void aSubgraphOfDegreeOneContainsDegreeOneConnections() {
         Set<Vertex> expectedDegree1Subgraph = ImmutableSet.of(v, parent, child);
         Set<Vertex> degree1SubGraph = network.getSubgraph(v, 1);
+        assertThat(degree1SubGraph, containsInAnyOrder(expectedDegree1Subgraph.toArray()));
+    }
+
+    @Test
+    public void aSubgraphOfDegreeOneFromTwoVerticesContainsDegreeOneConnections() {
+        Set<Vertex> expectedDegree1Subgraph = ImmutableSet.of(v, parent, child, grandParent);
+        Set<Vertex> degree1SubGraph = network.getSubgraph(ImmutableSet.of(v, parent), 1);
         assertThat(degree1SubGraph, containsInAnyOrder(expectedDegree1Subgraph.toArray()));
     }
 
