@@ -61,7 +61,7 @@ public class DotSaver implements NetworkSaver {
     @Override
     public void save(OutputStream output, boolean saveValues, Map<String, String> metadata) throws IOException {
         Preconditions.checkArgument(bayesianNetwork.getAllVertices().size() > 0, "Network must contain at least one vertex.");
-        save(output, bayesianNetwork.getAllVertices(), INFINITE_NETWORK_DEGREE, saveValues, metadata);
+        save(output, ImmutableSet.copyOf(bayesianNetwork.getAllVertices()), INFINITE_NETWORK_DEGREE, saveValues, metadata);
     }
 
     /**
@@ -91,13 +91,13 @@ public class DotSaver implements NetworkSaver {
      * @param metadata   metadata to be added to the output as comments
      * @throws IOException Any errors that occur during saving to the output stream
      */
-    public void save(OutputStream output, Collection<Vertex> vertices, int degree, boolean saveValues, Map<String, String> metadata) throws IOException {
+    public void save(OutputStream output, Set<Vertex> vertices, int degree, boolean saveValues, Map<String, String> metadata) throws IOException {
 
         dotLabels = new HashSet<>();
         graphEdges = new HashSet<>();
         Writer outputWriter = new OutputStreamWriter(output);
 
-        Set<Vertex> subGraph = vertices.stream().flatMap(vertex -> bayesianNetwork.getSubgraph(vertex, degree).stream()).collect(Collectors.toSet());
+        Set<Vertex> subGraph = bayesianNetwork.getSubgraph(vertices, degree);
 
         for (Vertex v : subGraph) {
             if (saveValues) {

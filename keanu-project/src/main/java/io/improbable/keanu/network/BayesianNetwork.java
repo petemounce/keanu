@@ -2,6 +2,7 @@ package io.improbable.keanu.network;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.improbable.keanu.algorithms.graphtraversal.TopologicalSort;
 import io.improbable.keanu.algorithms.graphtraversal.VertexValuePropagation;
 import io.improbable.keanu.tensor.dbl.DoubleTensor;
@@ -262,16 +263,16 @@ public class BayesianNetwork {
     /**
      * Method for traversing a graph and returning a subgraph of vertices within the given degree of the specified vertex.
      *
-     * @param vertex vertex that the subgraph will be centered around
+     * @param vertices that the subgraph will be centered around
      * @param degree degree of connections from the vertex to be included in the subgraph
      * @return a set of vertices within the specified degree from the given vertex
      */
-    public Set<Vertex> getSubgraph(Vertex vertex, int degree) {
+    public Set<Vertex> getSubgraph(Set<Vertex> vertices, int degree) {
 
         Set<Vertex> subgraphVertices = new HashSet<>();
         List<Vertex> verticesToProcessNow = new ArrayList<>();
-        verticesToProcessNow.add(vertex);
-        subgraphVertices.add(vertex);
+        verticesToProcessNow.addAll(vertices);
+        subgraphVertices.addAll(vertices);
 
         for (int distance = 0; distance < degree && !verticesToProcessNow.isEmpty(); distance++) {
             List<Vertex> connectedVertices = new ArrayList<>();
