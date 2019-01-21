@@ -1,6 +1,7 @@
 package io.improbable.keanu.util.io;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.improbable.keanu.network.BayesianNetwork;
 import io.improbable.keanu.network.NetworkSaver;
 import io.improbable.keanu.tensor.Tensor;
@@ -20,6 +21,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -59,8 +61,7 @@ public class DotSaver implements NetworkSaver {
     @Override
     public void save(OutputStream output, boolean saveValues, Map<String, String> metadata) throws IOException {
         Preconditions.checkArgument(bayesianNetwork.getAllVertices().size() > 0, "Network must contain at least one vertex.");
-        Vertex anyVertex = bayesianNetwork.getAllVertices().get(0);
-        save(output, anyVertex, INFINITE_NETWORK_DEGREE, saveValues, metadata);
+        save(output, bayesianNetwork.getAllVertices(), INFINITE_NETWORK_DEGREE, saveValues, metadata);
     }
 
     /**
@@ -75,7 +76,7 @@ public class DotSaver implements NetworkSaver {
      * @throws IOException Any errors that occur during saving to the output stream
      */
     public void save(OutputStream output, Vertex vertex, int degree, boolean saveValues) throws IOException {
-        save(output, vertex, degree, saveValues, null);
+        save(output, ImmutableSet.of(vertex), degree, saveValues, null);
     }
 
     /**
@@ -83,20 +84,21 @@ public class DotSaver implements NetworkSaver {
      * Read more about DOT format here: https://en.wikipedia.org/wiki/DOT_(graph_description_language)
      *
      * @param output     output stream to use for writing
-     * @param vertex     vertex around which the subgraph will be centered
+     * @param vertices   vertices around which the subgraph will be centered
      * @param degree     degree of connections to be visualized; for instance, if the degree is 1,
      *                   only connections between the vertex and its parents and children will be written out to the DOT file.
      * @param saveValues specify whether you want to output values of non-constant scalar vertices
      * @param metadata   metadata to be added to the output as comments
      * @throws IOException Any errors that occur during saving to the output stream
      */
-    public void save(OutputStream output, Vertex vertex, int degree, boolean saveValues, Map<String, String> metadata) throws IOException {
+    public void save(OutputStream output, Collection<Vertex> vertices, int degree, boolean saveValues, Map<String, String> metadata) throws IOException {
 
         dotLabels = new HashSet<>();
         graphEdges = new HashSet<>();
         Writer outputWriter = new OutputStreamWriter(output);
 
-        Set<Vertex> subGraph = bayesianNetwork.getSubgraph(vertex, degree);
+        Set<Vertex> subGraph = vertices.stream().flatMap(vertex -> bayesianNetwork.getSubgraph(vertex, degree).stream()).collect(Collectors.toSet());
+
         for (Vertex v : subGraph) {
             if (saveValues) {
                 v.saveValue(this);
