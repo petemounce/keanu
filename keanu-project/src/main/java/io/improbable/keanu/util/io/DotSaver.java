@@ -52,6 +52,11 @@ public class DotSaver implements NetworkSaver {
         this(network, vertex -> null);
     }
 
+    /**
+     * Create a DotSaver to save a given BayesianNetwork to DOT format
+     * @param network           the network to save
+     * @param clusterVerticesBy a clustering function to assign each vertex to a subgraph of the DOT file. If the function returns null, the vertex will not be placed into a subgraph.
+     */
     public DotSaver(BayesianNetwork network, Function<Vertex, String> clusterVerticesBy) {
         bayesianNetwork = network;
         this.clusterVerticesBy = clusterVerticesBy;
