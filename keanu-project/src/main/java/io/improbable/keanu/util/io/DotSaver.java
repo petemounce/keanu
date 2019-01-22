@@ -48,8 +48,13 @@ public class DotSaver implements NetworkSaver {
     private BayesianNetwork bayesianNetwork;
     private Multimap<String, VertexDotLabel> vertexDotLabelsByCluster = MultimapBuilder.SetMultimapBuilder.hashKeys().hashSetValues().build();
 
+    public static final Function<Vertex, String> CLUSTER_BY_NAMESPACE =
+        vertex -> vertex.getLabel() != null ? vertex.getLabel().getOuterNamespace().orElse(null) : null;
+    public static final Function<Vertex, String> NO_CLUSTER = vertex -> null;
+
+
     public DotSaver(BayesianNetwork network) {
-        this(network, vertex -> null);
+        this(network, NO_CLUSTER);
     }
 
     /**
