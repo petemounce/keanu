@@ -2,6 +2,8 @@ package io.improbable.keanu.util.io;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.MultimapBuilder;
 import io.improbable.keanu.network.BayesianNetwork;
 import io.improbable.keanu.network.NetworkSaver;
 import io.improbable.keanu.tensor.Tensor;
@@ -21,7 +23,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
 
 /**
@@ -40,13 +42,19 @@ public class DotSaver implements NetworkSaver {
     private static final String DOT_ENDING = "}";
     private static final String DOT_COMMENT_APPENDIX = "// ";
     private static final int INFINITE_NETWORK_DEGREE = Integer.MAX_VALUE;
+    private final Function<Vertex, String> clusterVerticesBy;
 
-    private Set<VertexDotLabel> dotLabels = new HashSet<>();
     private Set<GraphEdge> graphEdges = new HashSet<>();
     private BayesianNetwork bayesianNetwork;
+    private Multimap<String, VertexDotLabel> vertexDotLabelsByCluster = MultimapBuilder.SetMultimapBuilder.hashKeys().hashSetValues().build();
 
     public DotSaver(BayesianNetwork network) {
+        this(network, vertex -> null);
+    }
+
+    public DotSaver(BayesianNetwork network, Function<Vertex, String> clusterVerticesBy) {
         bayesianNetwork = network;
+        this.clusterVerticesBy = clusterVerticesBy;
     }
 
     /**
@@ -92,8 +100,7 @@ public class DotSaver implements NetworkSaver {
      * @throws IOException Any errors that occur during saving to the output stream
      */
     public void save(OutputStream output, Set<Vertex> vertices, int degree, boolean saveValues, Map<String, String> metadata) throws IOException {
-
-        dotLabels = new HashSet<>();
+        vertexDotLabelsByCluster = MultimapBuilder.SetMultimapBuilder.hashKeys().hashSetValues().build();
         graphEdges = new HashSet<>();
         Writer outputWriter = new OutputStreamWriter(output);
 
@@ -110,9 +117,13 @@ public class DotSaver implements NetworkSaver {
         outputWriter.write(DOT_HEADER);
         outputMetadata(metadata, outputWriter);
         outputEdges(graphEdges, outputWriter, subGraph);
-        outputLabels(dotLabels, outputWriter);
+        outputLabels(vertexDotLabelsByCluster, outputWriter);
         outputWriter.write(DOT_ENDING);
         outputWriter.close();
+    }
+
+    private void putVertexDotLabel(Vertex vertex, VertexDotLabel vertexDotLabel) {
+        vertexDotLabelsByCluster.put(clusterVerticesBy.apply(vertex), vertexDotLabel);
     }
 
     private static void outputMetadata(Map<String, String> metadata, Writer outputWriter) throws IOException {
@@ -124,11 +135,20 @@ public class DotSaver implements NetworkSaver {
         }
     }
 
-    private static void outputLabels(Collection<VertexDotLabel> dotLabels, Writer outputWriter) throws IOException {
-        for (VertexDotLabel dotLabel : dotLabels) {
-            outputWriter.write(dotLabel.inDotFormat() + "\n");
+    private static void outputLabels(Multimap<String, VertexDotLabel> dotLabels, Writer outputWriter) throws IOException {
+        for (String cluster : dotLabels.keySet()) {
+            if (cluster != null) {
+                outputWriter.write("subgraph \"cluster_" + cluster + "\"{\n");
+                outputWriter.write("label = \"" + cluster + "\"\n");
+            }
+            for (VertexDotLabel dotLabel : dotLabels.get(cluster)) {
+                outputWriter.write(dotLabel.inDotFormat() + "\n");
+            }
+            if (cluster != null) {
+                outputWriter.write("}\n");
+            }
         }
-    }
+   }
 
     private static void outputEdges(Collection<GraphEdge> edges, Writer outputWriter, Set<Vertex> verticesToOutput) throws IOException {
         for (GraphEdge edge : edges) {
@@ -140,7 +160,7 @@ public class DotSaver implements NetworkSaver {
 
     @Override
     public void save(Vertex vertex) {
-        dotLabels.add(new VertexDotLabel(vertex));
+        putVertexDotLabel(vertex, new VertexDotLabel(vertex));
         graphEdges.addAll(getParentEdges(vertex));
     }
 
@@ -154,7 +174,7 @@ public class DotSaver implements NetworkSaver {
         if (vertex.hasValue() && vertex.getValue() instanceof Tensor) {
             setDotLabelWithValue(vertex);
         } else {
-            dotLabels.add(new VertexDotLabel(vertex));
+            putVertexDotLabel(vertex, new VertexDotLabel(vertex));
         }
     }
 
@@ -181,7 +201,7 @@ public class DotSaver implements NetworkSaver {
         if (vertex.hasValue() && vertex.getValue().isScalar()) {
             vertexDotLabel.setValue("" + vertex.getValue().scalar());
         }
-        dotLabels.add(vertexDotLabel);
+        putVertexDotLabel(vertex, vertexDotLabel);
     }
 
     private Set<GraphEdge> getParentEdges(Vertex vertex) {

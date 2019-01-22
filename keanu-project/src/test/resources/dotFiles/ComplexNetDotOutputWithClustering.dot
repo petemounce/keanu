@@ -1,0 +1,51 @@
+digraph BayesianNetwork {
+<96> -> <97> [label=sigma]
+<98> -> <99> [label=right]
+<100> -> <101> [label=right]
+<101> -> <102> [label=right]
+<91> -> <92> [label=k]
+<93> -> <94> [label=right]
+<95> -> <97> [label=mu]
+<97> -> <99> [label=left]
+<99> -> <101> [label=left]
+<90> -> <92> [label=theta]
+<92> -> <94> [label=left]
+<94> -> <102> [label=left]
+subgraph "cluster_LessThanVertex"{
+label = "LessThanVertex"
+94[label="LessThanVertex"]
+}
+subgraph "cluster_ConstantIntegerVertex"{
+label = "ConstantIntegerVertex"
+93[label="-1"]
+}
+subgraph "cluster_GaussianVertex"{
+label = "GaussianVertex"
+97[label="GaussianVertex"]
+}
+subgraph "cluster_OrBinaryVertex"{
+label = "OrBinaryVertex"
+102[label="OR"]
+}
+subgraph "cluster_EqualsVertex"{
+label = "EqualsVertex"
+101[label="EqualsVertex"]
+}
+subgraph "cluster_GammaVertex"{
+label = "GammaVertex"
+92[label="GammaVertex"]
+}
+subgraph "cluster_ConstantDoubleVertex"{
+label = "ConstantDoubleVertex"
+98[label="5.0"]
+90[label="0.0"]
+91[label="1.0"]
+100[label="10.0"]
+95[label="0.0"]
+96[label="1.0"]
+}
+subgraph "cluster_AdditionVertex"{
+label = "AdditionVertex"
+99[label="+"]
+}
+}

@@ -33,6 +33,7 @@ public class DotSaverTest {
 
     private static Vertex complexResultVertex;
     private static DotSaver complexNetDotSaver;
+    private static DotSaver complexNetDotSaverClustering;
     private static ByteArrayOutputStream outputWriter;
     private static final String resourcesFolder = "dotFiles";
     private static final String GAUSSIAN_OUTPUT_FILENAME = resourcesFolder + "/GaussianNodeOutput.dot";
@@ -40,6 +41,7 @@ public class DotSaverTest {
     private static final String SCALAR_OUTPUT_FILENAME = resourcesFolder + "/ConstantScalarIntNodeOutput.dot";
     private static final String LABELLED_OUTPUT_FILENAME = resourcesFolder + "/ConstantLabelledIntNodeOutput.dot";
     private static final String COMPLEX_OUTPUT_FILENAME = resourcesFolder + "/ComplexNetDotOutput.dot";
+    private static final String COMPLEX_OUTPUT_WITH_CLUSTERING_FILENAME = resourcesFolder + "/ComplexNetDotOutputWithClustering.dot";
     private static final String VERTEX_DEGREE1__OUTPUT_FILENAME = resourcesFolder + "/VertexDegree1Output.dot";
     private static final String VERTEX_DEGREE2__OUTPUT_FILENAME = resourcesFolder + "/VertexDegree2Output.dot";
     private static final String OUTPUT_WITH_VALUES_FILENAME = resourcesFolder + "/OutputValuesSetToTrueOutput.dot";
@@ -56,6 +58,7 @@ public class DotSaverTest {
             .equalTo(new ConstantDoubleVertex(10)));
         BayesianNetwork complexNet = new BayesianNetwork(complexResultVertex.getConnectedGraph());
         complexNetDotSaver = new DotSaver(complexNet);
+        complexNetDotSaverClustering = new DotSaver(complexNet, vertex -> vertex.getClass().getSimpleName());
     }
 
     @Before
@@ -80,6 +83,13 @@ public class DotSaverTest {
     public void outputtingComplexNet() throws IOException {
         complexNetDotSaver.save(outputWriter, false);
         String expectedComplexOutput = readFileToString(COMPLEX_OUTPUT_FILENAME);
+        checkDotFilesMatch(outputWriter.toString(), expectedComplexOutput);
+    }
+
+    @Test
+    public void outputtingComplexNetWithClustering() throws IOException {
+        complexNetDotSaverClustering.save(outputWriter, false);
+        String expectedComplexOutput = readFileToString(COMPLEX_OUTPUT_WITH_CLUSTERING_FILENAME);
         checkDotFilesMatch(outputWriter.toString(), expectedComplexOutput);
     }
 

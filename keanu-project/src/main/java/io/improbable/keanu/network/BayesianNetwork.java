@@ -267,7 +267,7 @@ public class BayesianNetwork {
      * @param degree degree of connections from the vertex to be included in the subgraph
      * @return a set of vertices within the specified degree from the given vertex
      */
-    public Set<Vertex> getSubgraph(Vertex vertex, int degree) {
+    public static Set<Vertex> getSubgraph(Vertex vertex, int degree) {
         return getSubgraph(ImmutableSet.of(vertex), degree);
     }
 
@@ -278,7 +278,7 @@ public class BayesianNetwork {
      * @param degree degree of connections from the vertex to be included in the subgraph
      * @return a set of vertices within the specified degree from the given vertices
      */
-    public Set<Vertex> getSubgraph(Set<Vertex> vertices, int degree) {
+    public static Set<Vertex> getSubgraph(Set<Vertex> vertices, int degree) {
 
         Set<Vertex> subgraphVertices = new HashSet<>();
         List<Vertex> verticesToProcessNow = new ArrayList<>();
